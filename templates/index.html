@@ -1,52 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hasil Analisis Keranjang Belanja</title>
+    <title>Analisis Keranjang Belanja</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
-        .container { max-width: 1200px; margin: auto; background: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
-        h1 { color: #444; text-align: center; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
-        h2 { color: #0056b3; }
-        .info-box { background-color: #e7f3fe; border-left: 6px solid #2196F3; margin-top: 20px; padding: 15px 20px; font-size: 1.1em; }
-        .error-box { background-color: #ffebee; border-left: 6px solid #f44336; margin-top: 20px; padding: 15px 20px; }
-        .data { border-collapse: collapse; width: 100%; margin-top: 20px; font-size: 0.9em; }
-        .data th, .data td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        .data th { background-color: #007bff; color: white; position: sticky; top: 0; }
-        .data tr:nth-child(even) { background-color: #f2f2f2; }
-        .data tr:hover { background-color: #ddd; }
-        .footer { text-align: center; margin-top: 20px; font-size: 0.8em; color: #666; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; box-shadow: 0 0 15px rgba(0,0,0,0.1); border-radius: 8px; }
+        h1 { color: #0056b3; text-align: center; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+        .form-group input[type="file"], .form-group input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .form-group input[type="number"] { width: auto; }
+        .form-group small { display: block; margin-top: 5px; color: #777; font-size: 0.9em; }
+        .btn { display: block; width: 100%; background-color: #007bff; color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1em; text-align: center; }
+        .btn:hover { background-color: #0056b3; }
+        .error-box { background-color: #ffebee; border-left: 6px solid #f44336; margin: 20px 0; padding: 15px 20px; color: #c62828; }
+        .footer { text-align: center; margin-top: 30px; font-size: 0.9em; color: #666; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Hasil Analisis Keranjang Belanja (Market Basket Analysis)</h1>
-        
-        {% if transaction_count %}
-        <div class="info-box">
-            <strong>Informasi Data:</strong> Setelah pembersihan, ditemukan <strong>{{ transaction_count }} transaksi unik</strong> yang dianalisis dari file `online_retail_20k.csv`.
-        </div>
-        {% endif %}
+        <h1>Analisis Keranjang Belanja (Market Basket Analysis)</h1>
+        <p style="text-align: center; margin-bottom: 30px;">Unggah file data transaksi Anda (format CSV) untuk menemukan aturan asosiasi produk.</p>
 
+        {% if error %}
+            <div class="error-box">{{ error }}</div>
+        {% endif %}
         {% if message %}
-            <div class="error-box">
-                <h2>Pesan dari Sistem</h2>
-                <p>{{ message }}</p>
+            <div class="error-box">{{ message }}</div>
+        {% endif %}
+
+        <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">1. Pilih File CSV</label>
+                <input type="file" id="file" name="file" accept=".csv" required>
+                <small>Struktur CSV harus memiliki kolom 'InvoiceNo', 'Description', 'Quantity', dan 'CustomerID'.</small>
             </div>
-        {% endif %}
-
-        {% if tables %}
-            <h2>Tabel Aturan Asosiasi</h2>
-            <p>Berikut adalah aturan asosiasi produk yang ditemukan. Aturan ini menunjukkan produk mana yang kemungkinan besar akan dibeli bersamaan.</p>
-            {% for table in tables %}
-                {{ table|safe }}
-            {% endfor %}
-        {% endif %}
+            
+            <div class="form-group">
+                <label for="min_support">2. Minimum Support</label>
+                <input type="number" id="min_support" name="min_support" value="0.02" step="0.001" min="0.001" max="1" required>
+                <small>Nilai antara 0 dan 1. Contoh: 0.02 (2%). Menentukan seberapa sering sebuah item harus muncul.</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="min_confidence">3. Minimum Confidence</label>
+                <input type="number" id="min_confidence" name="min_confidence" value="0.2" step="0.01" min="0.01" max="1" required>
+                <small>Nilai antara 0 dan 1. Contoh: 0.2 (20%). Menentukan seberapa sering aturan ditemukan benar.</small>
+            </div>
+            
+            <button type="submit" class="btn">Mulai Analisis</button>
+        </form>
     </div>
-
     <div class="footer">
-        <p>Dibuat dengan Python (Flask, Pandas, Mlxtend).</p>
+        <p>Dibuat dengan Python (Flask, Pandas, Mlxtend, Plotly).</p>
     </div>
 </body>
 </html>

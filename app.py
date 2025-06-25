@@ -1,12 +1,25 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, url_for
 import pandas as pd
 from mlxtend.frequent_patterns import apriori, association_rules
+import os
+import plotly
+import plotly.express as px
+import json
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload size
 
-def run_market_basket_analysis(file_path):
-    # Bagian 1 & 2: Membaca dan memproses data (Tidak ada perubahan di sini)
-    df = pd.read_csv(file_path, encoding='unicode_escape')
+def run_market_basket_analysis(file_path, min_support, min_confidence):
+    """
+    Fungsi inti untuk menjalankan analisis keranjang belanja.
+    """
+    try:
+        df = pd.read_csv(file_path, encoding='unicode_escape')
+    except Exception as e:
+        return None, None, f"Gagal membaca file CSV. Pastikan formatnya benar. Error: {e}"
+
+    # --- Pembersihan Data ---
     df.columns = df.columns.str.strip()
     df.dropna(axis=0, subset=['InvoiceNo', 'CustomerID'], inplace=True)
     df['CustomerID'] = df['CustomerID'].astype('int64')
@@ -14,57 +27,98 @@ def run_market_basket_analysis(file_path):
     df.dropna(axis=0, subset=['Description'], inplace=True)
     df['Description'] = df['Description'].str.strip()
 
+    # --- Transformasi Data ---
     basket = (df.groupby(['InvoiceNo', 'Description'])['Quantity']
               .sum().unstack().reset_index().fillna(0)
               .set_index('InvoiceNo'))
               
     transaction_count = len(basket)
-    basket_sets = (basket >= 1)
     
+    # Encode ke 0 dan 1
+    def encode_units(x):
+        if x <= 0:
+            return 0
+        if x >= 1:
+            return 1
+            
+    basket_sets = basket.applymap(encode_units)
+    
+    # Hapus kolom POSTAGE jika ada
     if 'POSTAGE' in basket_sets.columns:
         basket_sets.drop('POSTAGE', inplace=True, axis=1)
 
-    # Bagian 3 & 4: Menjalankan Algoritma (Tidak ada perubahan signifikan di sini)
-    frequent_itemsets = apriori(basket_sets, min_support=0.04, use_colnames=True)
+    # --- Algoritma Apriori ---
+    frequent_itemsets = apriori(basket_sets, min_support=min_support, use_colnames=True)
     
     if frequent_itemsets.empty:
-        return transaction_count, "No frequent itemsets found."
+        return transaction_count, None, "Tidak ada itemset yang sering muncul (frequent itemsets) dengan nilai minimum support yang diberikan. Coba turunkan nilai minimum support."
 
-    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.2)
+    # --- Aturan Asosiasi ---
+    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
     
     if rules.empty:
-        return transaction_count, "No association rules found."
+        return transaction_count, None, "Tidak ada aturan asosiasi yang ditemukan dengan nilai minimum confidence yang diberikan. Coba turunkan nilai minimum confidence."
 
-    # ===================== PENYESUAIAN TAMPILAN TABEL =====================
+    # --- Pembersihan dan Penyortiran Hasil ---
+    rules['antecedents'] = rules['antecedents'].apply(lambda a: ', '.join(list(a)))
+    rules['consequents'] = rules['consequents'].apply(lambda c: ', '.join(list(c)))
     
-    # Memilih hanya kolom yang paling penting untuk ditampilkan
     rules_simplified = rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']]
-    
-    # Mengurutkan aturan untuk menemukan yang terbaik
     rules_simplified = rules_simplified.sort_values(['confidence', 'lift'], ascending=[False, False])
     
-    # Mengembalikan DataFrame yang sudah disederhanakan
-    return transaction_count, rules_simplified
-    # =====================================================================
+    return transaction_count, rules_simplified, None
 
-# Rute Flask (Tidak ada perubahan di sini)
 @app.route('/')
 def index():
-    try:
-        transaction_count, analysis_result = run_market_basket_analysis('online_retail_20k.csv')
+    return render_template('index.html')
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    if 'file' not in request.files:
+        return redirect(url_for('index'))
         
-        if isinstance(analysis_result, str):
-            message = analysis_result
-            return render_template('index.html', message=message, transaction_count=transaction_count)
+    file = request.files['file']
+    if file.filename == '':
+        return redirect(url_for('index'))
 
-        return render_template('index.html', 
-                               tables=[analysis_result.to_html(classes='data', header="true", index=False)], 
-                               transaction_count=transaction_count)
+    if file:
+        filename = "uploaded_data.csv"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
 
-    except FileNotFoundError:
-        return "Error: File 'online_retail_20k.csv' tidak ditemukan."
-    except Exception as e:
-        return f"Terjadi kesalahan saat pemrosesan: {e}"
+        try:
+            min_support = float(request.form['min_support'])
+            min_confidence = float(request.form['min_confidence'])
+        except ValueError:
+            return render_template('index.html', error="Nilai support dan confidence harus berupa angka.")
+
+        transaction_count, rules_df, message = run_market_basket_analysis(filepath, min_support, min_confidence)
+        
+        if message:
+            return render_template('index.html', message=message)
+
+        # --- Membuat Visualisasi dengan Plotly ---
+        fig = px.scatter(rules_df, 
+                         x="support", 
+                         y="confidence",
+                         size="lift", 
+                         color="lift",
+                         hover_name="antecedents",
+                         hover_data={"consequents": True, "lift": ':.2f', "support": ':.4f', "confidence": ':.2f'},
+                         labels={"support": "Support", "confidence": "Confidence", "lift": "Lift"},
+                         title=f"Visualisasi Aturan Asosiasi (Support vs. Confidence)",
+                         color_continuous_scale=px.colors.sequential.Viridis)
+        
+        graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+        return render_template('results.html', 
+                               tables=[rules_df.to_html(classes='data', header="true", index=False)], 
+                               transaction_count=transaction_count,
+                               min_support=min_support,
+                               min_confidence=min_confidence,
+                               graphJSON=graphJSON)
 
 if __name__ == '__main__':
+    if not os.path.exists('uploads'):
+        os.makedirs('uploads')
     app.run(debug=True)
