@@ -11,9 +11,6 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload size
 
 def run_market_basket_analysis(file_path, min_support, min_confidence):
-    """
-    Fungsi inti untuk menjalankan analisis keranjang belanja.
-    """
     try:
         df = pd.read_csv(file_path, encoding='unicode_escape')
     except Exception as e:
@@ -97,26 +94,12 @@ def analyze():
         if message:
             return render_template('index.html', message=message)
 
-        # --- Membuat Visualisasi dengan Plotly ---
-        fig = px.scatter(rules_df, 
-                         x="support", 
-                         y="confidence",
-                         size="lift", 
-                         color="lift",
-                         hover_name="antecedents",
-                         hover_data={"consequents": True, "lift": ':.2f', "support": ':.4f', "confidence": ':.2f'},
-                         labels={"support": "Support", "confidence": "Confidence", "lift": "Lift"},
-                         title=f"Visualisasi Aturan Asosiasi (Support vs. Confidence)",
-                         color_continuous_scale=px.colors.sequential.Viridis)
-        
-        graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
         return render_template('results.html', 
                                tables=[rules_df.to_html(classes='data', header="true", index=False)], 
                                transaction_count=transaction_count,
                                min_support=min_support,
-                               min_confidence=min_confidence,
-                               graphJSON=graphJSON)
+                               min_confidence=min_confidence)
 
 if __name__ == '__main__':
     if not os.path.exists('uploads'):

@@ -6,20 +6,82 @@
     <title>Hasil Analisis</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
-        .container { max-width: 1200px; margin: auto; background: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
-        h1, h2 { color: #0056b3; }
-        h1 { text-align: center; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
-        .info-box { background-color: #e7f3fe; border-left: 6px solid #2196F3; margin: 20px 0; padding: 15px 20px; }
-        .metrics-explainer { background-color: #fffde7; border-left: 6px solid #ffc107; margin: 20px 0; padding: 15px 20px; }
-        .data { border-collapse: collapse; width: 100%; margin-top: 20px; font-size: 0.9em; }
-        .data th, .data td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        .data th { background-color: #007bff; color: white; position: sticky; top: 0; }
-        .data tr:nth-child(even) { background-color: #f2f2f2; }
-        .data tr:hover { background-color: #e9ecef; }
-        .back-link { display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; }
-        .back-link:hover { background-color: #5a6268; }
-        .footer { text-align: center; margin-top: 20px; font-size: 0.8em; color: #666; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container { 
+            max-width: 1200px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h1, h2 {
+             color: #0056b3;
+            }
+        h1 {
+             text-align: center;
+             border-bottom: 2px solid #0056b3;
+             padding-bottom: 10px;
+            }
+        .info-box { 
+            background-color: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            margin: 20px 0;
+            padding: 15px 20px;
+        }
+        .metrics-explainer { 
+            background-color: #fffde7;
+            border-left: 6px solid #ffc107;
+            margin: 20px 0;
+            padding: 15px 20px;
+        }
+        .data { 
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        .data th, .data td { 
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .data th { 
+            background-color: #007bff;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        .data tr:nth-child(even) { 
+            background-color: #f2f2f2;
+        }
+        .data tr:hover { 
+            background-color: #e9ecef;
+        }
+        .back-link { 
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .back-link:hover { 
+            background-color: #5a6268;
+        }
+        .footer { 
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8em;
+            color: #666;
+        }
     </style>
 </head>
 <body>
